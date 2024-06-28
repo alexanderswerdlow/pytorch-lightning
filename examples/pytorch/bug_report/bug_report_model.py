@@ -47,9 +47,6 @@ def run():
     val_data = DataLoader(RandomDataset(32, 64), batch_size=2)
     test_data = DataLoader(RandomDataset(32, 64), batch_size=2)
 
-    torch.utils.data._utils
-    # torch / utils / data / _utils / worker.py
-
     model = BoringModel()
     trainer = Trainer(
         default_root_dir=os.getcwd(),
