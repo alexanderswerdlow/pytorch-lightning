@@ -280,6 +280,7 @@ markers = [
     "cloud: Run the cloud tests for example",
 ]
 filterwarnings = [
+    "ignore:.*FSDP.state_dict_type.*:FutureWarning",
     "error::FutureWarning",
 ]
 xfail_strict = true
