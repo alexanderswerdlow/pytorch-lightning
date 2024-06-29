@@ -21,8 +21,6 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import torch
-from torch.profiler import ProfilerActivity
-
 from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_4
 from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.callbacks import EarlyStopping, StochasticWeightAveraging
