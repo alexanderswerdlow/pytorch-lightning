@@ -60,7 +60,7 @@ def _load(
         return torch.load(
             f,
             map_location=map_location,  # type: ignore[arg-type]
-            weights_only=weights_only
+            weights_only=weights_only,
         )
 
 

@@ -82,7 +82,7 @@ def test_resume_early_stopping_from_checkpoint(tmp_path):
 
     checkpoint_filepath = checkpoint_callback.kth_best_model_path
     # ensure state is persisted properly
-    checkpoint = torch.load(checkpoint_filepath)
+    checkpoint = torch.load(checkpoint_filepath, weights_only=True)
     # the checkpoint saves "epoch + 1"
     early_stop_callback_state = early_stop_callback.saved_states[checkpoint["epoch"]]
     assert len(early_stop_callback.saved_states) == 4
