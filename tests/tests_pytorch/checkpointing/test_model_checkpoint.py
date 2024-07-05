@@ -17,6 +17,7 @@ import pickle
 import re
 import time
 from argparse import Namespace
+from contextlib import nullcontext
 from datetime import timedelta
 from inspect import signature
 from pathlib import Path
@@ -30,6 +31,7 @@ import pytest
 import torch
 import yaml
 from jsonargparse import ArgumentParser
+from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_4
 from lightning.fabric.utilities.cloud_io import _load as pl_load
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import ModelCheckpoint
@@ -350,12 +352,12 @@ def test_pickling(tmp_path):
     ckpt = ModelCheckpoint(dirpath=tmp_path)
 
     ckpt_pickled = pickle.dumps(ckpt)
-    with pytest.warns(FutureWarning, match="You are using `torch.load` with `weights_only=False`"):
+    with pytest.warns(FutureWarning, match="`weights_only=False`") if _TORCH_GREATER_EQUAL_2_4 else nullcontext():
         ckpt_loaded = pickle.loads(ckpt_pickled)
     assert vars(ckpt) == vars(ckpt_loaded)
 
     ckpt_pickled = cloudpickle.dumps(ckpt)
-    with pytest.warns(FutureWarning, match="You are using `torch.load` with `weights_only=False`"):
+    with pytest.warns(FutureWarning, match="`weights_only=False`") if _TORCH_GREATER_EQUAL_2_4 else nullcontext():
         ckpt_loaded = cloudpickle.loads(ckpt_pickled)
     assert vars(ckpt) == vars(ckpt_loaded)
 

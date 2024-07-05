@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pickle
+from contextlib import nullcontext
 
 import cloudpickle
 import pytest
 import torch
 
+from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_4
 from tests_pytorch import _PATH_DATASETS
 from tests_pytorch.helpers.datasets import MNIST, AverageDataset, TrialMNIST
 
@@ -42,9 +44,9 @@ def test_pickling_dataset_mnist(dataset_cls, args):
     mnist = dataset_cls(**args)
 
     mnist_pickled = pickle.dumps(mnist)
-    with pytest.warns(FutureWarning, match="You are using `torch.load` with `weights_only=False`"):
+    with pytest.warns(FutureWarning, match="`weights_only=False`") if _TORCH_GREATER_EQUAL_2_4 else nullcontext():
         pickle.loads(mnist_pickled)
 
     mnist_pickled = cloudpickle.dumps(mnist)
-    with pytest.warns(FutureWarning, match="You are using `torch.load` with `weights_only=False`"):
+    with pytest.warns(FutureWarning, match="`weights_only=False`") if _TORCH_GREATER_EQUAL_2_4 else nullcontext():
         cloudpickle.loads(mnist_pickled)
