@@ -160,7 +160,8 @@ def test_wandb_pickle(wandb_mock, tmp_path):
     assert trainer.logger.experiment, "missing experiment"
     assert trainer.log_dir == logger.save_dir
     pkl_bytes = pickle.dumps(trainer)
-    trainer2 = pickle.loads(pkl_bytes)
+    with pytest.warns(FutureWarning, match="You are using `torch.load` with `weights_only=False`"):
+        trainer2 = pickle.loads(pkl_bytes)
 
     assert os.environ["WANDB_MODE"] == "dryrun"
     assert trainer2.logger.__class__.__name__ == WandbLogger.__name__

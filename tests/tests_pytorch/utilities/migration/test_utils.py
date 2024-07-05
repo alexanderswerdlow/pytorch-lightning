@@ -84,7 +84,7 @@ def test_test_patch_legacy_imports_standalone(pl_version):
     path_ckpt = path_ckpts[-1]
 
     with no_warning_call(match="Redirecting import of*"), pl_legacy_patch():
-        torch.load(path_ckpt, weights_only=True)
+        torch.load(path_ckpt, weights_only=False)
 
     assert any(
         key.startswith("pytorch_lightning") for key in sys.modules

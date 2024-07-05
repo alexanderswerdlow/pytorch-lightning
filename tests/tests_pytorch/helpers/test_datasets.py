@@ -42,9 +42,9 @@ def test_pickling_dataset_mnist(dataset_cls, args):
     mnist = dataset_cls(**args)
 
     mnist_pickled = pickle.dumps(mnist)
-    pickle.loads(mnist_pickled)
-    # assert vars(mnist) == vars(mnist_loaded)
+    with pytest.warns(FutureWarning, match="You are using `torch.load` with `weights_only=False`"):
+        pickle.loads(mnist_pickled)
 
     mnist_pickled = cloudpickle.dumps(mnist)
-    cloudpickle.loads(mnist_pickled)
-    # assert vars(mnist) == vars(mnist_loaded)
+    with pytest.warns(FutureWarning, match="You are using `torch.load` with `weights_only=False`"):
+        cloudpickle.loads(mnist_pickled)

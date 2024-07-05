@@ -182,7 +182,8 @@ def _test_loggers_pickle(tmp_path, monkeypatch, logger_class):
     trainer = Trainer(max_epochs=1, logger=logger)
     pkl_bytes = pickle.dumps(trainer)
 
-    trainer2 = pickle.loads(pkl_bytes)
+    with pytest.warns(FutureWarning, match="You are using `torch.load` with `weights_only=False`"):
+        trainer2 = pickle.loads(pkl_bytes)
     trainer2.logger.log_metrics({"acc": 1.0})
 
     # make sure we restored properly

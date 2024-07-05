@@ -350,11 +350,13 @@ def test_pickling(tmp_path):
     ckpt = ModelCheckpoint(dirpath=tmp_path)
 
     ckpt_pickled = pickle.dumps(ckpt)
-    ckpt_loaded = pickle.loads(ckpt_pickled)
+    with pytest.warns(FutureWarning, match="You are using `torch.load` with `weights_only=False`"):
+        ckpt_loaded = pickle.loads(ckpt_pickled)
     assert vars(ckpt) == vars(ckpt_loaded)
 
     ckpt_pickled = cloudpickle.dumps(ckpt)
-    ckpt_loaded = cloudpickle.loads(ckpt_pickled)
+    with pytest.warns(FutureWarning, match="You are using `torch.load` with `weights_only=False`"):
+        ckpt_loaded = cloudpickle.loads(ckpt_pickled)
     assert vars(ckpt) == vars(ckpt_loaded)
 
 

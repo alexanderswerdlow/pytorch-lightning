@@ -122,7 +122,8 @@ def test_multiple_loggers_pickle(tmp_path):
 
     trainer = Trainer(logger=[logger1, logger2])
     pkl_bytes = pickle.dumps(trainer)
-    trainer2 = pickle.loads(pkl_bytes)
+    with pytest.warns(FutureWarning, match="You are using `torch.load` with `weights_only=False`"):
+        trainer2 = pickle.loads(pkl_bytes)
     for logger in trainer2.loggers:
         logger.log_metrics({"acc": 1.0}, 0)
 

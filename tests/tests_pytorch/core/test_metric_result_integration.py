@@ -253,7 +253,8 @@ def test_result_collection_restoration(tmp_path):
         }
 
         # make sure can be pickled
-        pickle.loads(pickle.dumps(result))
+        with pytest.warns(FutureWarning, match="You are using `torch.load` with `weights_only=False`"):
+            pickle.loads(pickle.dumps(result))
         # make sure can be torch.loaded
         filepath = str(tmp_path / "result")
         torch.save(result, filepath)
