@@ -217,6 +217,7 @@ def test_custom_mixed_precision():
     assert strategy.mixed_precision_config == config
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @RunIf(min_cuda_gpus=2, skip_windows=True, standalone=True)
 def test_strategy_sync_batchnorm(tmp_path):
     """Test to ensure that sync_batchnorm works when using FSDP and GPU, and all stages can be run."""
@@ -264,6 +265,7 @@ def test_modules_without_parameters(tmp_path):
     trainer.fit(model)
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @RunIf(min_cuda_gpus=2, skip_windows=True, standalone=True)
 @pytest.mark.parametrize("precision", ["16-mixed", pytest.param("bf16-mixed", marks=RunIf(bf16_cuda=True))])
 @pytest.mark.parametrize("state_dict_type", ["sharded", "full"])
@@ -285,6 +287,7 @@ def custom_auto_wrap_policy(
     return nonwrapped_numel >= 2
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @RunIf(min_cuda_gpus=2, skip_windows=True, standalone=True)
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
 def test_strategy_full_state_dict(tmp_path, wrap_min_params):
