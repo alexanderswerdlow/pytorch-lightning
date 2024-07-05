@@ -13,15 +13,16 @@
 # limitations under the License.
 import os
 import sys
+from contextlib import nullcontext
 from unittest import mock
 
 import pytest
 import torch
-from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_2
+from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_2, _TORCH_GREATER_EQUAL_2_4
 from lightning.pytorch import LightningModule, Trainer
 from lightning.pytorch.demos.boring_classes import BoringModel
 from lightning.pytorch.utilities.compile import from_compiled, to_uncompiled
-from lightning_utilities.core import module_available
+from lightning_utilities.core.imports import RequirementCache
 
 from tests_pytorch.conftest import mock_cuda_count
 from tests_pytorch.helpers.runif import RunIf
@@ -68,11 +69,21 @@ def test_trainer_compiled_model(_, tmp_path, monkeypatch, mps_count_0):
     assert trainer.model._compiler_ctx is None
 
     # some strategies do not support it
-    if module_available("deepspeed"):
+    if RequirementCache("deepspeed"):
         compiled_model = torch.compile(model)
         mock_cuda_count(monkeypatch, 2)
-        trainer = Trainer(strategy="deepspeed", accelerator="cuda", **trainer_kwargs)
-        with pytest.raises(RuntimeError, match="Using a compiled model is incompatible with the current strategy.*"):
+
+        # TODO: Update deepspeed to avoid deprecation warning for `torch.cuda.amp.custom_fwd` on import
+        warn_context = (
+            pytest.warns(FutureWarning, match="`weights_only=False`") if _TORCH_GREATER_EQUAL_2_4 else nullcontext()
+        )
+
+        with warn_context:
+            trainer = Trainer(strategy="deepspeed", accelerator="cuda", **trainer_kwargs)
+
+        with warn_context, pytest.raises(
+            RuntimeError, match="Using a compiled model is incompatible with the current strategy.*"
+        ):
             trainer.fit(compiled_model)
 
     # ddp does
