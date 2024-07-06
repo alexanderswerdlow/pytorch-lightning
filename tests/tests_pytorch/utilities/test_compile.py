@@ -76,7 +76,8 @@ def test_trainer_compiled_model(_, tmp_path, monkeypatch, mps_count_0):
         # TODO: Update deepspeed to avoid deprecation warning for `torch.cuda.amp.custom_fwd` on import
         warn_context = (
             pytest.warns(FutureWarning, match="torch.cuda.amp.*is deprecated")
-            if _TORCH_GREATER_EQUAL_2_4 else nullcontext()
+            if _TORCH_GREATER_EQUAL_2_4
+            else nullcontext()
         )
 
         with warn_context:
