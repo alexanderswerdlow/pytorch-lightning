@@ -616,6 +616,7 @@ def test_strategy_save_optimizer_states(tmp_path, wrap_min_params):
     trainer.strategy.barrier()
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @RunIf(min_cuda_gpus=2, skip_windows=True, standalone=True)
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
 def test_strategy_load_optimizer_states(wrap_min_params, tmp_path):
