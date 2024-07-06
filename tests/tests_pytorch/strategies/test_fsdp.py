@@ -815,6 +815,7 @@ class TestFSDPCheckpointModel(BoringModel):
             torch.testing.assert_close(p0, p1, atol=0, rtol=0, equal_nan=True)
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @RunIf(min_cuda_gpus=2, standalone=True)
 def test_save_load_sharded_state_dict(tmp_path):
     """Test FSDP saving and loading with the sharded state dict format."""
