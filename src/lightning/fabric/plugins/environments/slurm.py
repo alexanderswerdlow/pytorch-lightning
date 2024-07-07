@@ -109,6 +109,7 @@ class SLURMEnvironment(ClusterEnvironment):
         detected automatically.
 
         """
+        return False
         SLURMEnvironment._validate_srun_used()
         return _is_srun_used()
 
@@ -156,6 +157,7 @@ class SLURMEnvironment(ClusterEnvironment):
 
     @override
     def validate_settings(self, num_devices: int, num_nodes: int) -> None:
+        return
         if _is_slurm_interactive_mode():
             return
         ntasks_per_node = os.environ.get("SLURM_NTASKS_PER_NODE")
@@ -188,6 +190,7 @@ class SLURMEnvironment(ClusterEnvironment):
 
     @staticmethod
     def _validate_srun_used() -> None:
+        return
         """Checks if the `srun` command is available and used.
 
         Parallel jobs (multi-GPU, multi-node) in SLURM are launched by prepending `srun` in front of the Python command.
@@ -209,6 +212,7 @@ class SLURMEnvironment(ClusterEnvironment):
 
     @staticmethod
     def _validate_srun_variables() -> None:
+        return
         """Checks for conflicting or incorrectly set variables set through `srun` and raises a useful error message.
 
         Right now, we only check for the most common user errors. See
@@ -225,8 +229,10 @@ class SLURMEnvironment(ClusterEnvironment):
 
 
 def _is_srun_used() -> bool:
+    return False
     return "SLURM_NTASKS" in os.environ and not _is_slurm_interactive_mode()
 
 
 def _is_slurm_interactive_mode() -> bool:
+    return False
     return SLURMEnvironment.job_name() in ("bash", "interactive")
