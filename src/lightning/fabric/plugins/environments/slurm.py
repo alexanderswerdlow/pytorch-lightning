@@ -50,8 +50,9 @@ class SLURMEnvironment(ClusterEnvironment):
         if requeue_signal is None and not _IS_WINDOWS:
             requeue_signal = signal.SIGUSR1
         self.requeue_signal = requeue_signal
-        # self._validate_srun_used()
-        # self._validate_srun_variables()
+        self._validate_srun_used()
+        self._validate_srun_variables()
+        print(f"Initialized SLURM Cluster Environment")
 
     @property
     @override
@@ -109,7 +110,6 @@ class SLURMEnvironment(ClusterEnvironment):
         detected automatically.
 
         """
-        return False
         SLURMEnvironment._validate_srun_used()
         return _is_srun_used()
 
@@ -157,17 +157,18 @@ class SLURMEnvironment(ClusterEnvironment):
 
     @override
     def validate_settings(self, num_devices: int, num_nodes: int) -> None:
-        return
         if _is_slurm_interactive_mode():
             return
         ntasks_per_node = os.environ.get("SLURM_NTASKS_PER_NODE")
         if ntasks_per_node is not None and int(ntasks_per_node) != num_devices:
+            print(f"Failed SLURM_NTASKS_PER_NODE: {ntasks_per_node}")
             raise ValueError(
                 f"You set `devices={num_devices}` in Lightning, but the number of tasks per node configured in SLURM"
                 f" `--ntasks-per-node={ntasks_per_node}` does not match. HINT: Set `devices={ntasks_per_node}`."
             )
         nnodes = os.environ.get("SLURM_NNODES")
         if nnodes is not None and int(nnodes) != num_nodes:
+            print(f"Failed SLURM_NNODES: {nnodes}")
             raise ValueError(
                 f"You set `num_nodes={num_nodes}` in Lightning, but the number of nodes configured in SLURM"
                 f" `--nodes={nnodes}` does not match. HINT: Set `num_nodes={nnodes}`."
@@ -212,7 +213,6 @@ class SLURMEnvironment(ClusterEnvironment):
 
     @staticmethod
     def _validate_srun_variables() -> None:
-        return
         """Checks for conflicting or incorrectly set variables set through `srun` and raises a useful error message.
 
         Right now, we only check for the most common user errors. See
@@ -222,6 +222,7 @@ class SLURMEnvironment(ClusterEnvironment):
         """
         ntasks = int(os.environ.get("SLURM_NTASKS", "1"))
         if ntasks > 1 and "SLURM_NTASKS_PER_NODE" not in os.environ:
+            print(f"Failed SLURM_NTASKS_PER_NODE: {os.environ.get('SLURM_NTASKS_PER_NODE')}")
             raise RuntimeError(
                 f"You set `--ntasks={ntasks}` in your SLURM bash script, but this variable is not supported."
                 f" HINT: Use `--ntasks-per-node={ntasks}` instead."
@@ -229,10 +230,10 @@ class SLURMEnvironment(ClusterEnvironment):
 
 
 def _is_srun_used() -> bool:
-    return False
+    if "SLURM_NTASKS" in os.environ and not _is_slurm_interactive_mode():
+        print(f"We found that srun is used")
     return "SLURM_NTASKS" in os.environ and not _is_slurm_interactive_mode()
 
 
 def _is_slurm_interactive_mode() -> bool:
-    return False
     return SLURMEnvironment.job_name() in ("bash", "interactive")

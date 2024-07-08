@@ -114,7 +114,7 @@ class _CheckpointConnector:
     ) -> Optional[_PATH]:
         """Converts the ``ckpt_path`` special values into an actual filepath, depending on the trainer
         configuration."""
-        if ckpt_path is None and SLURMEnvironment.detect() and self._hpc_resume_path is not None:
+        if ckpt_path is None and self._hpc_resume_path is not None and SLURMEnvironment.detect():
             ckpt_path = "hpc"
 
         from lightning.pytorch.callbacks.on_exception_checkpoint import OnExceptionCheckpoint
