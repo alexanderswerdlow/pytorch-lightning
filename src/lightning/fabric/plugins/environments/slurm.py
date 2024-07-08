@@ -50,8 +50,8 @@ class SLURMEnvironment(ClusterEnvironment):
         if requeue_signal is None and not _IS_WINDOWS:
             requeue_signal = signal.SIGUSR1
         self.requeue_signal = requeue_signal
-        self._validate_srun_used()
-        self._validate_srun_variables()
+        # self._validate_srun_used()
+        # self._validate_srun_variables()
 
     @property
     @override

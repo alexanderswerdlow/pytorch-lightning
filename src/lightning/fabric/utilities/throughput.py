@@ -155,13 +155,13 @@ class Throughput:
         """Compute throughput metrics."""
         metrics = {
             "time": self._time[-1],
-            "batches": self._batches[-1],
-            "samples": self._samples[-1],
+            "batches": self._batches[-1] * self.world_size,
+            "samples": self._samples[-1] * self.world_size,
         }
         if self._lengths:
             metrics["lengths"] = self._lengths[-1]
 
-        add_global_metrics = self.world_size > 1
+        add_global_metrics = True
         # a different but valid design choice would be to still compute all these metrics even if the window of values
         # has not been filled
         if len(self._time) == self._time.maxlen:
@@ -657,6 +657,7 @@ class _MonotonicWindow(List[T]):
     def append(self, x: T) -> None:
         last = self.last
         if last is not None and last >= x:
+            breakpoint()
             raise ValueError(f"Expected the value to increase, last: {last}, current: {x}")
         list.append(self, x)
         # truncate excess

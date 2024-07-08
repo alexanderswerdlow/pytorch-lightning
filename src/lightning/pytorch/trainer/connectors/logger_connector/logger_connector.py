@@ -70,7 +70,7 @@ class _LoggerConnector:
         elif logger is True:
             # default logger
             if _TENSORBOARD_AVAILABLE or _TENSORBOARDX_AVAILABLE:
-                logger_ = TensorBoardLogger(save_dir=self.trainer.default_root_dir, version=SLURMEnvironment.job_id())
+                logger_ = TensorBoardLogger(save_dir=self.trainer.default_root_dir)
             else:
                 warning_cache.warn(
                     "Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `lightning.pytorch`"

@@ -87,6 +87,7 @@ class ThroughputMonitor(Callback):
         self._throughputs: Dict[RunningStage, Throughput] = {}
         self._t0s: Dict[RunningStage, float] = {}
         self._lengths: Dict[RunningStage, int] = {}
+        self.max_batch_size = 0
 
     @override
     def setup(self, trainer: "Trainer", pl_module: "LightningModule", stage: str) -> None:
@@ -134,11 +135,14 @@ class ThroughputMonitor(Callback):
             flops_per_batch = None
 
         batch_size = self.batch_size_fn(batch)
+        self.max_batch_size = max(batch_size, self.max_batch_size)
+        if batch_size < self.max_batch_size:
+            print(f"Batch size is less than previous: {batch_size} < {self.max_batch_size}")
         throughput.update(
             time=elapsed,
             batches=iter_num,
             # this assumes that all iterations used the same batch size
-            samples=iter_num * batch_size,
+            samples=iter_num * max(batch_size, self.max_batch_size),
             lengths=None if self.length_fn is None else self._lengths[stage],
             flops=flops_per_batch,
         )
@@ -152,7 +156,11 @@ class ThroughputMonitor(Callback):
         metrics = throughput.compute()
         # prefix with the stage to avoid collisions
         metrics = {f"{stage.value}{throughput.separator}{k}": v for k, v in metrics.items()}
-        trainer._logger_connector.log_metrics(metrics, step=iter_num)  # type: ignore[arg-type]
+
+        if trainer.is_global_zero:
+            trainer.logger.experiment.log(dict(**metrics, **{"trainer/global_step": trainer.global_step, "global_samples_throughput": metrics[f"{stage.value}{throughput.separator}samples"]}))
+        
+        # trainer._logger_connector.log_metrics(metrics, step=iter_num)  # type: ignore[arg-type]
 
     @override
     @rank_zero_only
@@ -182,8 +190,7 @@ class ThroughputMonitor(Callback):
     def on_validation_batch_end(
         self, trainer: "Trainer", pl_module: "LightningModule", outputs: Any, batch: Any, *_: Any, **__: Any
     ) -> None:
-        if trainer.sanity_checking:
-            return
+        return
         iter_num = trainer._evaluation_loop.batch_progress.total.ready
         self._update(trainer, pl_module, batch, iter_num)
         self._compute(trainer, iter_num)
@@ -191,8 +198,7 @@ class ThroughputMonitor(Callback):
     @override
     @rank_zero_only
     def on_validation_end(self, trainer: "Trainer", *_: Any) -> None:
-        if trainer.sanity_checking or trainer.state.fn != TrainerFn.FITTING:
-            return
+        return
         # add the validation time to the training time before continuing to avoid sinking the training throughput
         training_finished = self._t0s[RunningStage.TRAINING] + sum(self._throughputs[RunningStage.TRAINING]._time)
         time_between_train_and_val = self._t0s[RunningStage.VALIDATING] - training_finished

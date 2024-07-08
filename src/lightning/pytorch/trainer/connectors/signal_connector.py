@@ -40,7 +40,6 @@ class _SignalConnector:
         self._original_handlers: Dict[_SIGNUM, _HANDLER] = {}
 
     def register_signal_handlers(self) -> None:
-        return
         self.received_sigterm = False
         self._original_handlers = self._get_current_signal_handlers()
 
