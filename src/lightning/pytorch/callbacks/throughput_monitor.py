@@ -112,7 +112,7 @@ class ThroughputMonitor(Callback):
         self._t0s[stage] = time.perf_counter()
 
     @torch.inference_mode()  # in case `length_fn` or `batch_size_fn` computes grads
-    def _update(self, trainer: "Trainer", pl_module: "LightningModule", batch: Any, iter_num: int) -> None:
+    def _update(self, trainer: "Trainer", pl_module: "LightningModule", batch: Any, iter_num: int, increment_step=False) -> None:
         stage = trainer.state.stage
         assert stage is not None
         throughput = self._throughputs[stage]
@@ -145,6 +145,7 @@ class ThroughputMonitor(Callback):
             samples=iter_num * max(batch_size, self.max_batch_size),
             lengths=None if self.length_fn is None else self._lengths[stage],
             flops=flops_per_batch,
+            increment_step=increment_step
         )
 
     def _compute(self, trainer: "Trainer", iter_num: Optional[int] = None) -> None:
@@ -155,10 +156,10 @@ class ThroughputMonitor(Callback):
         throughput = self._throughputs[stage]
         metrics = throughput.compute()
         # prefix with the stage to avoid collisions
-        metrics = {f"{stage.value}{throughput.separator}{k}": v for k, v in metrics.items()}
+        metrics = {f"{stage.value}_metrics/{k}": v for k, v in metrics.items()}
 
         if trainer.is_global_zero:
-            trainer.logger.experiment.log(dict(**metrics, **{"trainer/global_step": trainer.global_step, "global_samples_throughput": metrics[f"{stage.value}{throughput.separator}samples"]}))
+            trainer.logger.experiment.log(dict(**metrics, **{"trainer/global_step": trainer.global_step}))
         
         # trainer._logger_connector.log_metrics(metrics, step=iter_num)  # type: ignore[arg-type]
 
@@ -172,7 +173,7 @@ class ThroughputMonitor(Callback):
     def on_train_batch_end(
         self, trainer: "Trainer", pl_module: "LightningModule", outputs: Any, batch: Any, *_: Any
     ) -> None:
-        self._update(trainer, pl_module, batch, trainer.fit_loop.total_batch_idx + 1)
+        self._update(trainer, pl_module, batch, trainer.fit_loop.total_batch_idx + 1, increment_step=not trainer.fit_loop._should_accumulate())
         # log only when gradient accumulation is over. this ensures that we only measure when the effective batch has
         # finished and the `optimizer.step()` time is included
         if not trainer.fit_loop._should_accumulate():

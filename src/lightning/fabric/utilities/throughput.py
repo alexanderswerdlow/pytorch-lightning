@@ -108,6 +108,7 @@ class Throughput:
         self._batches: _MonotonicWindow[int] = _MonotonicWindow(maxlen=window_size)
         self._samples: _MonotonicWindow[int] = _MonotonicWindow(maxlen=window_size)
         self._lengths: _MonotonicWindow[int] = _MonotonicWindow(maxlen=window_size)
+        self._steps: _MonotonicWindow[int] = _MonotonicWindow(maxlen=window_size)
         self._flops: Deque[int] = deque(maxlen=window_size)
 
     def update(
@@ -118,6 +119,7 @@ class Throughput:
         samples: int,
         lengths: Optional[int] = None,
         flops: Optional[int] = None,
+        increment_step: bool = False,
     ) -> None:
         """Update throughput metrics.
 
@@ -131,6 +133,7 @@ class Throughput:
             flops: Flops elapased per device since last ``update()`` call. You can easily compute this by using
                 :func:`measure_flops` and multiplying it by the number of batches that have been processed.
                 The value might be different in each device if the batch size is not the same.
+            increment_step: Flag to increment the step counter.
 
         """
         self._time.append(time)
@@ -139,8 +142,8 @@ class Throughput:
         self._batches.append(batches)
         self._samples.append(samples)
         if lengths is not None:
-            if lengths < samples:
-                raise ValueError(f"Expected lengths ({lengths}) to be greater or equal than samples ({samples})")
+            # if lengths < samples:
+            #     raise ValueError(f"Expected lengths ({lengths}) to be greater or equal than samples ({samples})")
             self._lengths.append(lengths)
             if len(self._samples) != len(self._lengths):
                 raise RuntimeError(
@@ -150,6 +153,8 @@ class Throughput:
         if flops is not None:
             # sum of flops across ranks
             self._flops.append(flops * self.world_size)
+        if increment_step:
+            self._steps.append(self._steps[-1] + 1 if len(self._steps) > 0 else 1)
 
     def compute(self) -> _THROUGHPUT_METRICS:
         """Compute throughput metrics."""
@@ -157,6 +162,7 @@ class Throughput:
             "time": self._time[-1],
             "batches": self._batches[-1] * self.world_size,
             "samples": self._samples[-1] * self.world_size,
+            "steps": self._steps[-1],
         }
         if self._lengths:
             metrics["lengths"] = self._lengths[-1]
@@ -168,18 +174,21 @@ class Throughput:
             elapsed_time = self._time[-1] - self._time[0]
             elapsed_batches = self._batches[-1] - self._batches[0]
             elapsed_samples = self._samples[-1] - self._samples[0]
+            elapsed_steps = self._steps[-1] - self._steps[0]
             # we are safe from ZeroDivisionError thanks to `_MonotonicWindow`
             dev_samples_per_sec = elapsed_samples / elapsed_time
             dev_batches_per_sec = elapsed_batches / elapsed_time
+            dev_steps_per_sec = elapsed_steps / elapsed_time
             metrics.update({
-                f"device{self.separator}batches_per_sec": elapsed_batches / elapsed_time,
+                f"device{self.separator}batches_per_sec": dev_batches_per_sec,
                 f"device{self.separator}samples_per_sec": dev_samples_per_sec,
+                f"device{self.separator}steps_per_sec": dev_steps_per_sec,
             })
             if add_global_metrics:
-                samples_per_sec = dev_batches_per_sec * self.world_size
                 metrics.update({
-                    "batches_per_sec": samples_per_sec,
+                    "batches_per_sec": dev_batches_per_sec * self.world_size,
                     "samples_per_sec": dev_samples_per_sec * self.world_size,
+                    "steps_per_sec": dev_steps_per_sec * self.world_size,
                 })
 
             if len(self._lengths) == self._lengths.maxlen:
@@ -187,8 +196,7 @@ class Throughput:
                 dev_items_per_sec = elapsed_lengths / elapsed_time
                 metrics[f"device{self.separator}items_per_sec"] = dev_items_per_sec
                 if add_global_metrics:
-                    items_per_sec = dev_items_per_sec * self.world_size
-                    metrics["items_per_sec"] = items_per_sec
+                    metrics["items_per_sec"] = dev_items_per_sec * self.world_size
 
         if len(self._flops) == self._flops.maxlen:
             elapsed_flops = sum(self._flops) - self._flops[0]
@@ -209,6 +217,7 @@ class Throughput:
         self._samples.clear()
         self._lengths.clear()
         self._flops.clear()
+        self._steps.clear()
 
 
 class ThroughputMonitor(Throughput):
@@ -657,7 +666,6 @@ class _MonotonicWindow(List[T]):
     def append(self, x: T) -> None:
         last = self.last
         if last is not None and last >= x:
-            breakpoint()
             raise ValueError(f"Expected the value to increase, last: {last}, current: {x}")
         list.append(self, x)
         # truncate excess

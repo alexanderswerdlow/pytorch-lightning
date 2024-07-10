@@ -293,7 +293,7 @@ class _CheckpointConnector:
         self.restore_loops()
 
         assert self.trainer.state.fn is not None
-        if self.trainer.state.fn == TrainerFn.FITTING:
+        if self.trainer.state.fn == TrainerFn.FITTING and False:
             # restore optimizers and schedulers state
             self.restore_optimizers_and_schedulers()
 
