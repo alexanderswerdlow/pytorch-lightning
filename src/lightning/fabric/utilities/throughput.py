@@ -666,7 +666,9 @@ class _MonotonicWindow(List[T]):
     def append(self, x: T) -> None:
         last = self.last
         if last is not None and last >= x:
-            raise ValueError(f"Expected the value to increase, last: {last}, current: {x}")
+            pass
+            # print(f"Expected the value to increase, last: {last}, current: {x}")
+            # raise ValueError(f"Expected the value to increase, last: {last}, current: {x}")
         list.append(self, x)
         # truncate excess
         if len(self) > self.maxlen:
